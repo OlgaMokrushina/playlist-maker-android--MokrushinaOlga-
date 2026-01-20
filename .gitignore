@@ -16,6 +16,7 @@ captures/
 *.apk
 output-metadata.json
 
+
 # IntelliJ
 *.iml
 .idea/
