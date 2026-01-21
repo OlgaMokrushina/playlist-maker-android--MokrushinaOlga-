@@ -1,115 +1,128 @@
 package com.example.playlistmaker.ui.search
 
-import android.util.Log
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.playlistmaker.R
 import com.example.playlistmaker.domain.models.Track
 
 @Composable
-fun TrackListItem(track: Track) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.ic_music),
-            contentDescription = "Трек ${track.trackName}"
-        )
-
-        Column(
-            modifier = Modifier.weight(1f),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Text(track.trackName, fontWeight = FontWeight.Bold)
-            Text(track.artistName)
-        }
-
-        Text(track.trackTime)
-    }
-}
-
-@Composable
 fun SearchScreen(
-    modifier: Modifier,
-    viewModel: SearchViewModel
+    modifier: Modifier = Modifier,
+    viewModel: SearchViewModel,
+    onBack: () -> Unit,
 ) {
-    val screenState by viewModel.searchScreenState.collectAsState()
-    var text by remember { mutableStateOf("") }
+    var query by remember { mutableStateOf("") }
+    var showResults by remember { mutableStateOf(false) }
+
+    val state by viewModel.searchScreenState.collectAsState()
 
     Column(
-        modifier = Modifier
-            .padding(top = 48.dp, start = 16.dp, end = 16.dp)
-            .fillMaxWidth(),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
-        OutlinedTextField(
-            value = text,
-            onValueChange = { text = it },
-            leadingIcon = {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
                 Icon(
-                    modifier = Modifier.clickable {
-                        Log.d("TEST", "Icon click, text='$text'")
-                        viewModel.search(text)
-                    },
-                    imageVector = Icons.Filled.Search,
-                    contentDescription = "Search Icon"
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.cd_back)
                 )
+            }
+            Text(
+                text = stringResource(R.string.menu_search),
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it }, // НЕ ищем автоматически
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(text = stringResource(R.string.search_placeholder)) },
+            singleLine = true,
+            leadingIcon = {
+                IconButton(
+                    onClick = {
+                        viewModel.search(query)
+                        showResults = query.isNotBlank()
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Search,
+                        contentDescription = stringResource(R.string.cd_search)
+                    )
+                }
             },
-            modifier = Modifier.fillMaxWidth()
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(
+                        onClick = {
+                            query = ""
+                            showResults = false
+                            viewModel.search("") // вернём Initial
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.cd_clear)
+                        )
+                    }
+                }
+            }
         )
 
-        when (val state = screenState) {
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (!showResults) {
+            Text(text = stringResource(R.string.search_hint))
+            return@Column
+        }
+
+        when (state) {
             is SearchState.Initial -> {
-                Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Введите строку для поиска")
-                }
+                Text(text = stringResource(R.string.search_hint))
             }
 
             is SearchState.Searching -> {
-                Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                 }
             }
 
             is SearchState.Success -> {
-                if (state.foundList.isEmpty()) {
-                    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Ничего не найдено")
-                    }
+                val tracks = (state as SearchState.Success).foundList
+
+                if (tracks.isEmpty()) {
+                    Text(text = stringResource(R.string.search_nothing_found))
                 } else {
-                    LazyColumn(modifier = modifier.fillMaxSize()) {
-                        items(state.foundList) { track ->
-                            TrackListItem(track = track)
+                    LazyColumn {
+                        items(tracks) { track ->
+                            TrackItem(track = track)
                             HorizontalDivider(thickness = 0.5.dp)
                         }
                     }
@@ -117,10 +130,23 @@ fun SearchScreen(
             }
 
             is SearchState.Fail -> {
-                Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Ошибка: ${state.error}")
-                }
+                val error = (state as SearchState.Fail).error
+                Text(text = stringResource(R.string.search_error, error))
             }
         }
+    }
+}
+
+@Composable
+private fun TrackItem(track: Track) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {  }
+            .padding(vertical = 12.dp)
+    ) {
+        Text(text = track.trackName)
+        Text(text = track.artistName)
+        Text(text = track.trackTime)
     }
 }

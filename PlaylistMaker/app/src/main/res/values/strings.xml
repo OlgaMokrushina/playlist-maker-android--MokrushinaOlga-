@@ -1,3 +1,43 @@
 <resources>
+
     <string name="app_name">PlaylistMaker</string>
+    <string name="main_title">Playlist maker</string>
+    <string name="menu_search">Поиск</string>
+    <string name="menu_playlists">Плейлисты</string>
+    <string name="menu_favorites">Избранное</string>
+    <string name="menu_settings">Настройки</string>
+    <string name="search_placeholder">Поиск</string>
+    <!-- Settings screen -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_dark_theme">Тёмная тема</string>
+    <string name="settings_share">Поделиться приложением</string>
+    <string name="settings_support">Написать в поддержку</string>
+    <string name="settings_agreement">Пользовательское соглашение</string>
+
+
+    <string name="search_hint">Введите запрос для поиска</string>
+    <string name="search_nothing_found">Ничего не найдено</string>
+    <string name="search_error">Ошибка: %1$s</string>
+
+    <string name="cd_back">Назад</string>
+    <string name="cd_search">Искать</string>
+    <string name="cd_clear">Очистить</string>
+
+    <string name="cd_menu_item">Открыть: %1$s</string>
+    <string name="cd_go_next">Перейти</string>
+
+
+
+    <!-- Share -->
+    <string name="share_text">Привет! Советую приложение PlaylistMaker</string>
+    <string name="settings_share_chooser_title">Поделиться через</string>
+
+    <!-- Support email -->
+    <string name="support_email">mokrrushina.olya@yandex.ru</string>
+    <string name="support_subject">Сообщение в поддержку PlaylistMaker</string>
+    <string name="support_body">Здравствуйте!\n\nОпишите вашу проблему:\n\n</string>
+
+    <!-- Agreement -->
+    <string name="agreement_url">https://yandex.ru/legal/practicum_offer/</string>
+
 </resources>
