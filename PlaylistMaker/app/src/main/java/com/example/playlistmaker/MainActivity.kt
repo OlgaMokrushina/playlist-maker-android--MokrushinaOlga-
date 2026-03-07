@@ -14,12 +14,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.playlistmaker.ui.main.MainScreen
 import com.example.playlistmaker.ui.navigation.Screen
+import com.example.playlistmaker.ui.playlists.PlaylistsScreen
 import com.example.playlistmaker.ui.search.SearchScreen
 import com.example.playlistmaker.ui.search.SearchViewModel
 import com.example.playlistmaker.ui.settings.SettingsScreen
 import com.example.playlistmaker.ui.simple.SimpleScreen
 import com.example.playlistmaker.ui.theme.PlaylistMakerTheme
-
 
 class MainActivity : ComponentActivity() {
 
@@ -64,11 +64,9 @@ class MainActivity : ComponentActivity() {
                                 onBack = { navController.popBackStack() }
                             )
                         }
+
                         composable(Screen.Playlists.route) {
-                            SimpleScreen(
-                                titleRes = R.string.menu_playlists,
-                                onBack = { navController.popBackStack() }
-                            )
+                            PlaylistsScreen()
                         }
 
                         composable(Screen.Favorites.route) {
@@ -77,7 +75,6 @@ class MainActivity : ComponentActivity() {
                                 onBack = { navController.popBackStack() }
                             )
                         }
-
                     }
                 }
             }
