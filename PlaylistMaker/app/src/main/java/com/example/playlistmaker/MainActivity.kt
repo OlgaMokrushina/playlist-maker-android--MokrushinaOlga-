@@ -14,11 +14,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.playlistmaker.ui.main.MainScreen
 import com.example.playlistmaker.ui.navigation.Screen
+import com.example.playlistmaker.ui.playlists.FavoritesScreen
+import com.example.playlistmaker.ui.playlists.NewPlaylistScreen
 import com.example.playlistmaker.ui.playlists.PlaylistsScreen
+import com.example.playlistmaker.ui.playlists.PlaylistsViewModel
+import com.example.playlistmaker.ui.playlists.TrackDetailsScreen
 import com.example.playlistmaker.ui.search.SearchScreen
 import com.example.playlistmaker.ui.search.SearchViewModel
 import com.example.playlistmaker.ui.settings.SettingsScreen
-import com.example.playlistmaker.ui.simple.SimpleScreen
 import com.example.playlistmaker.ui.theme.PlaylistMakerTheme
 
 class MainActivity : ComponentActivity() {
@@ -26,6 +29,8 @@ class MainActivity : ComponentActivity() {
     private val searchViewModel: SearchViewModel by viewModels {
         SearchViewModel.getViewModelFactory()
     }
+
+    private val playlistsViewModel: PlaylistsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,7 +40,9 @@ class MainActivity : ComponentActivity() {
             PlaylistMakerTheme {
                 val navController = rememberNavController()
 
-                Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
+                Scaffold(
+                    modifier = Modifier.fillMaxSize()
+                ) { paddingValues ->
                     NavHost(
                         navController = navController,
                         startDestination = Screen.Main.route,
@@ -54,8 +61,23 @@ class MainActivity : ComponentActivity() {
                             SearchScreen(
                                 modifier = Modifier.fillMaxSize(),
                                 viewModel = searchViewModel,
-                                onBack = { navController.popBackStack() }
+                                onBack = { navController.popBackStack() },
+                                onTrackClick = { track ->
+                                    searchViewModel.selectTrack(track)
+                                    navController.navigate(Screen.TrackDetails.route)
+                                }
                             )
+                        }
+
+                        composable(Screen.TrackDetails.route) {
+                            val selectedTrack = searchViewModel.selectedTrack.value
+                            if (selectedTrack != null) {
+                                TrackDetailsScreen(
+                                    track = selectedTrack,
+                                    playlistsViewModel = playlistsViewModel,
+                                    onBack = { navController.popBackStack() }
+                                )
+                            }
                         }
 
                         composable(Screen.Settings.route) {
@@ -66,12 +88,26 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(Screen.Playlists.route) {
-                            PlaylistsScreen()
+                            PlaylistsScreen(
+                                playlistsViewModel = playlistsViewModel,
+                                addNewPlaylist = {
+                                    navController.navigate(Screen.NewPlaylist.route)
+                                },
+                                navigateToPlaylist = { },
+                                navigateBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable(Screen.NewPlaylist.route) {
+                            NewPlaylistScreen(
+                                playlistsViewModel = playlistsViewModel,
+                                onBack = { navController.popBackStack() }
+                            )
                         }
 
                         composable(Screen.Favorites.route) {
-                            SimpleScreen(
-                                titleRes = R.string.menu_favorites,
+                            FavoritesScreen(
+                                playlistsViewModel = playlistsViewModel,
                                 onBack = { navController.popBackStack() }
                             )
                         }

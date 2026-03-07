@@ -13,7 +13,6 @@ class RetrofitNetworkClient : NetworkClient {
             is TracksSearchRequest -> {
                 val query = dto.expression.trim().lowercase()
 
-                // простая фильтрация демо-списка по запросу
                 val filtered = demoTracks().filter { track ->
                     track.trackName.lowercase().contains(query) ||
                             track.artistName.lowercase().contains(query)
@@ -27,10 +26,35 @@ class RetrofitNetworkClient : NetworkClient {
     }
 
     private fun demoTracks(): List<TrackDto> = listOf(
-        TrackDto("Love Me Again", "John Newman", 245000),
-        TrackDto("Crazy In Love", "Beyoncé", 236000),
-        TrackDto("I Love Rock 'N Roll", "Joan Jett & the Blackhearts", 175000),
-        TrackDto("Love Yourself", "Justin Bieber", 234000),
-        TrackDto("Lose Yourself", "Eminem", 326000),
+        TrackDto(
+            trackId = 1L,
+            trackName = "Love Me Again",
+            artistName = "John Newman",
+            trackTimeMillis = 245000
+        ),
+        TrackDto(
+            trackId = 2L,
+            trackName = "Crazy In Love",
+            artistName = "Beyoncé",
+            trackTimeMillis = 236000
+        ),
+        TrackDto(
+            trackId = 3L,
+            trackName = "I Love Rock 'N Roll",
+            artistName = "Joan Jett & the Blackhearts",
+            trackTimeMillis = 175000
+        ),
+        TrackDto(
+            trackId = 4L,
+            trackName = "Love Yourself",
+            artistName = "Justin Bieber",
+            trackTimeMillis = 234000
+        ),
+        TrackDto(
+            trackId = 5L,
+            trackName = "Lose Yourself",
+            artistName = "Eminem",
+            trackTimeMillis = 326000
+        )
     )
 }

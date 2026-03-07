@@ -17,9 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.example.playlistmaker.R
 import com.example.playlistmaker.domain.models.Track
 
 @Composable
@@ -27,10 +25,9 @@ fun SearchScreen(
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel,
     onBack: () -> Unit,
+    onTrackClick: (Track) -> Unit
 ) {
     var query by remember { mutableStateOf("") }
-    var showResults by remember { mutableStateOf(false) }
-
     val state by viewModel.searchScreenState.collectAsState()
 
     Column(
@@ -45,11 +42,11 @@ fun SearchScreen(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.cd_back)
+                    contentDescription = "Назад"
                 )
             }
             Text(
-                text = stringResource(R.string.menu_search),
+                text = "Поиск",
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
@@ -58,35 +55,30 @@ fun SearchScreen(
 
         OutlinedTextField(
             value = query,
-            onValueChange = { query = it }, // НЕ ищем автоматически
+            onValueChange = {
+                query = it
+                viewModel.search(it)
+            },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(text = stringResource(R.string.search_placeholder)) },
+            placeholder = { Text("Введите запрос") },
             singleLine = true,
             leadingIcon = {
-                IconButton(
-                    onClick = {
-                        viewModel.search(query)
-                        showResults = query.isNotBlank()
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Search,
-                        contentDescription = stringResource(R.string.cd_search)
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Filled.Search,
+                    contentDescription = "Поиск"
+                )
             },
             trailingIcon = {
                 if (query.isNotEmpty()) {
                     IconButton(
                         onClick = {
                             query = ""
-                            showResults = false
-                            viewModel.search("") // вернём Initial
+                            viewModel.search("")
                         }
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Close,
-                            contentDescription = stringResource(R.string.cd_clear)
+                            contentDescription = "Очистить"
                         )
                     }
                 }
@@ -95,14 +87,9 @@ fun SearchScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (!showResults) {
-            Text(text = stringResource(R.string.search_hint))
-            return@Column
-        }
-
         when (state) {
             is SearchState.Initial -> {
-                Text(text = stringResource(R.string.search_hint))
+                Text("Введите запрос для поиска")
             }
 
             is SearchState.Searching -> {
@@ -118,11 +105,14 @@ fun SearchScreen(
                 val tracks = (state as SearchState.Success).foundList
 
                 if (tracks.isEmpty()) {
-                    Text(text = stringResource(R.string.search_nothing_found))
+                    Text("Ничего не найдено")
                 } else {
                     LazyColumn {
                         items(tracks) { track ->
-                            TrackItem(track = track)
+                            TrackItem(
+                                track = track,
+                                onClick = { onTrackClick(track) }
+                            )
                             HorizontalDivider(thickness = 0.5.dp)
                         }
                     }
@@ -130,19 +120,21 @@ fun SearchScreen(
             }
 
             is SearchState.Fail -> {
-                val error = (state as SearchState.Fail).error
-                Text(text = stringResource(R.string.search_error, error))
+                Text("Ошибка поиска")
             }
         }
     }
 }
 
 @Composable
-private fun TrackItem(track: Track) {
+private fun TrackItem(
+    track: Track,
+    onClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {  }
+            .clickable { onClick() }
             .padding(vertical = 12.dp)
     ) {
         Text(text = track.trackName)

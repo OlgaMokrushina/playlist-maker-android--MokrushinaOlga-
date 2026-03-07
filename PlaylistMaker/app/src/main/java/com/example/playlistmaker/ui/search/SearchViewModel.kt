@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.playlistmaker.domain.api.TracksRepository
+import com.example.playlistmaker.domain.models.Track
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -17,6 +19,13 @@ class SearchViewModel(
 
     private val _searchScreenState = MutableStateFlow<SearchState>(SearchState.Initial)
     val searchScreenState = _searchScreenState.asStateFlow()
+
+    private val _selectedTrack = MutableStateFlow<Track?>(null)
+    val selectedTrack = _selectedTrack.asStateFlow()
+
+    fun selectTrack(track: Track) {
+        _selectedTrack.value = track
+    }
 
     fun search(whatSearch: String) {
         Log.d("TEST", "search() called: '$whatSearch'")
@@ -47,7 +56,7 @@ class SearchViewModel(
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     return SearchViewModel(
-                        SearchCreator.provideTracksRepository()
+                        SearchCreator.provideTracksRepository(MainScope())
                     ) as T
                 }
             }
