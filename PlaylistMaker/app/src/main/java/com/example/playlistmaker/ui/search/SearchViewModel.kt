@@ -23,11 +23,15 @@ class SearchViewModel(
     private val _selectedTrack = MutableStateFlow<Track?>(null)
     val selectedTrack = _selectedTrack.asStateFlow()
 
+    private var lastSearchQuery: String = ""
+
     fun selectTrack(track: Track) {
         _selectedTrack.value = track
     }
 
     fun search(whatSearch: String) {
+        lastSearchQuery = whatSearch
+
         Log.d("TEST", "search() called: '$whatSearch'")
 
         if (whatSearch.isBlank()) {
@@ -46,6 +50,12 @@ class SearchViewModel(
                 Log.d("TEST", "ERROR: ${e::class.java.simpleName} ${e.message}", e)
                 _searchScreenState.update { SearchState.Fail(e.message.toString()) }
             }
+        }
+    }
+
+    fun retrySearch() {
+        if (lastSearchQuery.isNotBlank()) {
+            search(lastSearchQuery)
         }
     }
 

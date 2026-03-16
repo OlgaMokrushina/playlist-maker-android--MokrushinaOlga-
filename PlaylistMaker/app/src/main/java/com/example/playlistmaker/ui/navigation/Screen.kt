@@ -8,4 +8,5 @@ sealed class Screen(val route: String) {
     object Favorites : Screen("favorites")
     object NewPlaylist : Screen("new_playlist")
     object TrackDetails : Screen("track_details")
+    object Playlist : Screen("playlist")
 }

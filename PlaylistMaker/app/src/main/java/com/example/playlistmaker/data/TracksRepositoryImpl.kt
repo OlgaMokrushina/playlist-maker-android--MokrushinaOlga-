@@ -27,11 +27,12 @@ class TracksRepositoryImpl(
                     id = dto.trackId,
                     trackName = dto.trackName,
                     artistName = dto.artistName,
-                    trackTime = trackTime
+                    trackTime = trackTime,
+                    artworkUrl100 = dto.artworkUrl100?.replaceAfterLast('/', "512x512bb.jpg")
                 )
             }
         } else {
-            emptyList()
+            throw RuntimeException("Server error")
         }
     }
 
@@ -59,10 +60,3 @@ class TracksRepositoryImpl(
         database.deleteTracksByPlaylistId(playlistId)
     }
 }
-
-
-
-
-
-
-

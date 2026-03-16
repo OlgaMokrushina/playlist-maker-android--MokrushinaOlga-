@@ -8,6 +8,11 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -16,6 +21,8 @@ import com.example.playlistmaker.ui.main.MainScreen
 import com.example.playlistmaker.ui.navigation.Screen
 import com.example.playlistmaker.ui.playlists.FavoritesScreen
 import com.example.playlistmaker.ui.playlists.NewPlaylistScreen
+import com.example.playlistmaker.ui.playlists.PlaylistScreen
+import com.example.playlistmaker.ui.playlists.PlaylistViewModel
 import com.example.playlistmaker.ui.playlists.PlaylistsScreen
 import com.example.playlistmaker.ui.playlists.PlaylistsViewModel
 import com.example.playlistmaker.ui.playlists.TrackDetailsScreen
@@ -37,7 +44,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            PlaylistMakerTheme {
+            var isDarkTheme by remember { mutableStateOf(false) }
+
+            PlaylistMakerTheme(
+                darkTheme = isDarkTheme
+            ) {
                 val navController = rememberNavController()
 
                 Scaffold(
@@ -70,10 +81,11 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(Screen.TrackDetails.route) {
-                            val selectedTrack = searchViewModel.selectedTrack.value
+                            val selectedTrack by searchViewModel.selectedTrack.collectAsState()
+
                             if (selectedTrack != null) {
                                 TrackDetailsScreen(
-                                    track = selectedTrack,
+                                    track = selectedTrack!!,
                                     playlistsViewModel = playlistsViewModel,
                                     onBack = { navController.popBackStack() }
                                 )
@@ -83,6 +95,8 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Settings.route) {
                             SettingsScreen(
                                 modifier = Modifier.fillMaxSize(),
+                                isDarkTheme = isDarkTheme,
+                                onThemeChange = { isDarkTheme = it },
                                 onBack = { navController.popBackStack() }
                             )
                         }
@@ -93,8 +107,25 @@ class MainActivity : ComponentActivity() {
                                 addNewPlaylist = {
                                     navController.navigate(Screen.NewPlaylist.route)
                                 },
-                                navigateToPlaylist = { },
+                                navigateToPlaylist = { playlistId ->
+                                    navController.navigate("${Screen.Playlist.route}/$playlistId")
+                                },
                                 navigateBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable("${Screen.Playlist.route}/{playlistId}") { backStackEntry ->
+                            val playlistId = backStackEntry.arguments
+                                ?.getString("playlistId")
+                                ?.toLongOrNull() ?: 0L
+
+                            val playlistViewModel = remember(playlistId) {
+                                PlaylistViewModel(playlistId)
+                            }
+
+                            PlaylistScreen(
+                                playlistViewModel = playlistViewModel,
+                                onBack = { navController.popBackStack() }
                             )
                         }
 

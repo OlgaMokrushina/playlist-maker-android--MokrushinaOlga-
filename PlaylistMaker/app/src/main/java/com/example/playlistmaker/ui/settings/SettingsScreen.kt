@@ -4,17 +4,20 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -25,14 +28,14 @@ import com.example.playlistmaker.R
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
+    isDarkTheme: Boolean,
+    onThemeChange: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    var darkTheme by remember { mutableStateOf(false) } // позже можно сохранить
 
     Column(modifier = modifier.fillMaxSize()) {
 
-        // Верхняя строка со стрелкой
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -47,13 +50,11 @@ fun SettingsScreen(
             }
         }
 
-        // Заголовок "Настройки"
         Text(
             text = stringResource(R.string.settings_title),
             modifier = Modifier.padding(start = 16.dp, bottom = 12.dp)
         )
 
-        // Тёмная тема (свитч справа)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -65,8 +66,8 @@ fun SettingsScreen(
                 modifier = Modifier.weight(1f)
             )
             Switch(
-                checked = darkTheme,
-                onCheckedChange = { darkTheme = it }
+                checked = isDarkTheme,
+                onCheckedChange = onThemeChange
             )
         }
 
@@ -113,7 +114,6 @@ private fun SettingsRow(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null
             )
-
         }
     }
 }
