@@ -20,7 +20,7 @@ class PlaylistsViewModel : ViewModel() {
     private val networkClient: NetworkClient = RetrofitNetworkClient()
 
     private val playlistsRepository: PlaylistsRepository =
-        PlaylistsRepositoryImpl(scope = viewModelScope)
+        PlaylistsRepositoryImpl()
 
     private val tracksRepository: TracksRepository =
         TracksRepositoryImpl(

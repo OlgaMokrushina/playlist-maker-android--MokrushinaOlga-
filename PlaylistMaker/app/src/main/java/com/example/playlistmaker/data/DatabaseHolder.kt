@@ -1,9 +1,18 @@
 package com.example.playlistmaker.data
 
-import kotlinx.coroutines.MainScope
+import android.content.Context
+import androidx.room.Room
+import com.example.playlistmaker.data.db.AppDatabase
 
 object DatabaseHolder {
-    val database: DatabaseMock by lazy {
-        DatabaseMock(scope = MainScope())
+
+    lateinit var database: AppDatabase
+
+    fun init(context: Context) {
+        database = Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "playlist_database"
+        ).build()
     }
 }

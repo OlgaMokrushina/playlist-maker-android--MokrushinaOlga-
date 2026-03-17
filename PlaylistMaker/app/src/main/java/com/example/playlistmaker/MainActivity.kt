@@ -12,7 +12,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -72,20 +71,19 @@ class MainActivity : ComponentActivity() {
                             SearchScreen(
                                 modifier = Modifier.fillMaxSize(),
                                 viewModel = searchViewModel,
-                                onBack = { navController.popBackStack() },
                                 onTrackClick = { track ->
                                     searchViewModel.selectTrack(track)
-                                    navController.navigate(Screen.TrackDetails.route)
+                                    navController.navigate("track_details")
                                 }
                             )
                         }
 
-                        composable(Screen.TrackDetails.route) {
-                            val selectedTrack by searchViewModel.selectedTrack.collectAsState()
+                        composable("track_details") {
+                            val selectedTrack = searchViewModel.selectedTrack
 
                             if (selectedTrack != null) {
                                 TrackDetailsScreen(
-                                    track = selectedTrack!!,
+                                    track = selectedTrack,
                                     playlistsViewModel = playlistsViewModel,
                                     onBack = { navController.popBackStack() }
                                 )

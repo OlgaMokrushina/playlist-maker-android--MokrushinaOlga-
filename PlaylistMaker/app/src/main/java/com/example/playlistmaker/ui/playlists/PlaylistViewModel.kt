@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import com.example.playlistmaker.data.PlaylistsRepositoryImpl
 import com.example.playlistmaker.domain.api.PlaylistsRepository
 import com.example.playlistmaker.domain.models.Playlist
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.Flow
 
 class PlaylistViewModel(
@@ -12,7 +11,7 @@ class PlaylistViewModel(
 ) : ViewModel() {
 
     private val playlistsRepository: PlaylistsRepository =
-        PlaylistsRepositoryImpl(scope = MainScope())
+        PlaylistsRepositoryImpl()
 
     val playlist: Flow<Playlist?> = playlistsRepository.getPlaylist(playlistId)
 }

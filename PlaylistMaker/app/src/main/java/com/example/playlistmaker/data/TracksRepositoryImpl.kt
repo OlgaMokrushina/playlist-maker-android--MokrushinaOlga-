@@ -1,18 +1,21 @@
 package com.example.playlistmaker.data
 
+import com.example.playlistmaker.data.db.entity.TrackEntity
 import com.example.playlistmaker.data.dto.TracksSearchRequest
 import com.example.playlistmaker.data.dto.TracksSearchResponse
 import com.example.playlistmaker.domain.api.TracksRepository
 import com.example.playlistmaker.domain.models.Track
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 class TracksRepositoryImpl(
     private val networkClient: NetworkClient,
     private val scope: CoroutineScope
 ) : TracksRepository {
 
-    private val database = DatabaseHolder.database
+    private val dao = DatabaseHolder.database.trackDao()
 
     override fun searchTracks(expression: String): List<Track> {
         val response = networkClient.doRequest(TracksSearchRequest(expression))
@@ -28,7 +31,9 @@ class TracksRepositoryImpl(
                     trackName = dto.trackName,
                     artistName = dto.artistName,
                     trackTime = trackTime,
-                    artworkUrl100 = dto.artworkUrl100?.replaceAfterLast('/', "512x512bb.jpg")
+                    artworkUrl100 = dto.artworkUrl100?.replaceAfterLast('/', "512x512bb.jpg"),
+                    favorite = false,
+                    playlistId = 0
                 )
             }
         } else {
@@ -37,26 +42,82 @@ class TracksRepositoryImpl(
     }
 
     override fun getTrackByNameAndArtist(track: Track): Flow<Track?> {
-        return database.getTrackByNameAndArtist(track)
+        return dao.getTrackByNameAndArtist(
+            trackName = track.trackName,
+            artistName = track.artistName
+        ).map { entity ->
+            entity?.toDomain()
+        }
     }
 
     override fun getFavoriteTracks(): Flow<List<Track>> {
-        return database.getFavoriteTracks()
+        return dao.getFavoriteTracks().map { entityList ->
+            entityList.map { entity ->
+                entity.toDomain()
+            }
+        }
     }
 
     override suspend fun insertTrackToPlaylist(track: Track, playlistId: Long) {
-        database.insertTrack(track.copy(playlistId = playlistId))
+        val current = dao.getTrackById(track.id)
+
+        val updatedTrack = track.copy(
+            favorite = current?.favorite ?: track.favorite,
+            playlistId = playlistId
+        )
+
+        dao.insertTrack(updatedTrack.toEntity())
     }
 
     override suspend fun deleteTrackFromPlaylist(track: Track) {
-        database.insertTrack(track.copy(playlistId = 0))
+        val current = dao.getTrackById(track.id)
+
+        val updatedTrack = track.copy(
+            favorite = current?.favorite ?: track.favorite,
+            playlistId = 0
+        )
+
+        dao.insertTrack(updatedTrack.toEntity())
     }
 
     override suspend fun updateTrackFavoriteStatus(track: Track, isFavorite: Boolean) {
-        database.insertTrack(track.copy(favorite = isFavorite))
+        val current = dao.getTrackById(track.id)
+
+        val updatedTrack = track.copy(
+            favorite = isFavorite,
+            playlistId = current?.playlistId ?: track.playlistId
+        )
+
+        dao.insertTrack(updatedTrack.toEntity())
     }
 
     override fun deleteTracksByPlaylistId(playlistId: Long) {
-        database.deleteTracksByPlaylistId(playlistId)
+        scope.launch {
+            dao.deleteTracksByPlaylistId(playlistId)
+        }
+    }
+
+    private fun TrackEntity.toDomain(): Track {
+        return Track(
+            id = id,
+            trackName = trackName,
+            artistName = artistName,
+            trackTime = trackTime,
+            artworkUrl100 = artworkUrl100,
+            favorite = favorite,
+            playlistId = playlistId
+        )
+    }
+
+    private fun Track.toEntity(): TrackEntity {
+        return TrackEntity(
+            id = id,
+            trackName = trackName,
+            artistName = artistName,
+            trackTime = trackTime,
+            artworkUrl100 = artworkUrl100,
+            favorite = favorite,
+            playlistId = playlistId
+        )
     }
 }

@@ -7,12 +7,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -22,9 +23,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,8 +30,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -76,9 +74,15 @@ fun TrackDetailsScreen(
     onBack: () -> Unit
 ) {
     val playlists by playlistsViewModel.playlists.collectAsState(initial = emptyList())
+    val scope = rememberCoroutineScope()
 
-    var isFavorite by remember { mutableStateOf(track.favorite) }
+    var isFavorite by remember { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(false) }
+
+    LaunchedEffect(track.id) {
+        val existingTrack = playlistsViewModel.isExist(track)
+        isFavorite = existingTrack?.favorite ?: false
+    }
 
     Scaffold(
         topBar = {
@@ -124,7 +128,12 @@ fun TrackDetailsScreen(
 
                 Button(
                     onClick = {
-                        isFavorite = !isFavorite
+                        val newFavorite = !isFavorite
+                        isFavorite = newFavorite
+
+                        scope.launch {
+                            playlistsViewModel.toggleFavorite(track, newFavorite)
+                        }
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -150,10 +159,6 @@ fun TrackDetailsScreen(
                     )
                     Text(" Добавить в плейлист")
                 }
-            }
-
-            LaunchedEffect(isFavorite) {
-                playlistsViewModel.toggleFavorite(track, isFavorite)
             }
 
             if (showBottomSheet) {
@@ -182,7 +187,7 @@ fun TrackDetailsScreen(
                                     playlistName = playlist.name,
                                     tracksCount = playlist.tracks.size,
                                     onClick = {
-                                        kotlinx.coroutines.MainScope().launch {
+                                        scope.launch {
                                             playlistsViewModel.insertTrackToPlaylist(
                                                 track = track,
                                                 playlistId = playlist.id
