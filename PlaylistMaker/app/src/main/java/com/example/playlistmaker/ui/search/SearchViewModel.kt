@@ -1,6 +1,5 @@
 package com.example.playlistmaker.ui.search
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -10,7 +9,6 @@ import com.example.playlistmaker.domain.models.Track
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SearchViewModel(
@@ -31,49 +29,47 @@ class SearchViewModel(
         selectedTrack = track
     }
 
-    fun search(whatSearch: String) {
-        Log.d("TEST", "search() called: '$whatSearch'")
+    fun search(query: String) {
+        val trimmedQuery = query.trim()
 
-        if (whatSearch.isBlank()) {
-            _searchScreenState.update { SearchState.Initial }
+        if (trimmedQuery.isBlank()) {
+            _searchScreenState.value = SearchState.Initial
             loadHistory()
             return
         }
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                _searchScreenState.update { SearchState.Searching }
+                _searchScreenState.value = SearchState.Searching
 
-                val list = tracksRepository.searchTracks(expression = whatSearch)
+                val result = tracksRepository.searchTracks(trimmedQuery)
 
-                searchHistoryRepository.addSearch(whatSearch)
-                loadHistory()
+                searchHistoryRepository.addSearch(trimmedQuery)
+                _history.emit(searchHistoryRepository.getHistory())
 
-                _searchScreenState.update {
-                    SearchState.Success(foundList = list)
-                }
-
+                _searchScreenState.value = SearchState.Success(result)
             } catch (e: Exception) {
-                Log.d("TEST", "ERROR: ${e::class.java.simpleName} ${e.message}", e)
-
-                _searchScreenState.update {
-                    SearchState.Fail(e.message.toString())
-                }
+                _searchScreenState.value = SearchState.Fail(
+                    e.message ?: "Unknown error"
+                )
             }
         }
     }
 
     fun loadHistory() {
         viewModelScope.launch(Dispatchers.IO) {
-            val historyList = searchHistoryRepository.getHistory()
-            _history.emit(historyList)
+            _history.emit(searchHistoryRepository.getHistory())
         }
+    }
+
+    fun clearSearch() {
+        _searchScreenState.value = SearchState.Initial
+        loadHistory()
     }
 
     companion object {
         fun getViewModelFactory(): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
-
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     return SearchViewModel(

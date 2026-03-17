@@ -60,10 +60,18 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable(Screen.Main.route) {
                             MainScreen(
-                                onSearchClick = { navController.navigate(Screen.Search.route) },
-                                onPlaylistsClick = { navController.navigate(Screen.Playlists.route) },
-                                onFavoritesClick = { navController.navigate(Screen.Favorites.route) },
-                                onSettingsClick = { navController.navigate(Screen.Settings.route) }
+                                onSearchClick = {
+                                    navController.navigate(Screen.Search.route)
+                                },
+                                onPlaylistsClick = {
+                                    navController.navigate(Screen.Playlists.route)
+                                },
+                                onFavoritesClick = {
+                                    navController.navigate(Screen.Favorites.route)
+                                },
+                                onSettingsClick = {
+                                    navController.navigate(Screen.Settings.route)
+                                }
                             )
                         }
 
@@ -73,18 +81,18 @@ class MainActivity : ComponentActivity() {
                                 viewModel = searchViewModel,
                                 onTrackClick = { track ->
                                     searchViewModel.selectTrack(track)
-                                    navController.navigate("track_details")
+                                    navController.navigate(Screen.TrackDetails.route)
                                 }
                             )
                         }
 
-                        composable("track_details") {
+                        composable(Screen.TrackDetails.route) {
                             val selectedTrack = searchViewModel.selectedTrack
 
                             if (selectedTrack != null) {
                                 TrackDetailsScreen(
                                     track = selectedTrack,
-                                    playlistsViewModel = playlistsViewModel,
+                                    viewModel = playlistsViewModel,
                                     onBack = { navController.popBackStack() }
                                 )
                             }
@@ -137,7 +145,11 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Favorites.route) {
                             FavoritesScreen(
                                 playlistsViewModel = playlistsViewModel,
-                                onBack = { navController.popBackStack() }
+                                onBack = { navController.popBackStack() },
+                                onTrackClick = { track ->
+                                    searchViewModel.selectTrack(track)
+                                    navController.navigate(Screen.TrackDetails.route)
+                                }
                             )
                         }
                     }

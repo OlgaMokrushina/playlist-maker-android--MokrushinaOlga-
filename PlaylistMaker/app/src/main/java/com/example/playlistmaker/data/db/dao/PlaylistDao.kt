@@ -4,7 +4,9 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.example.playlistmaker.data.db.entity.PlaylistEntity
+import com.example.playlistmaker.data.db.entity.PlaylistWithTracks
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -13,12 +15,14 @@ interface PlaylistDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPlaylist(playlist: PlaylistEntity)
 
-    @Query("SELECT * FROM playlists")
-    fun getAllPlaylists(): Flow<List<PlaylistEntity>>
+    @Query("DELETE FROM playlists WHERE id = :id")
+    suspend fun deletePlaylistById(id: Long)
 
-    @Query("SELECT * FROM playlists WHERE id = :playlistId")
-    fun getPlaylistById(playlistId: Long): Flow<PlaylistEntity?>
+    @Transaction
+    @Query("SELECT * FROM playlists ORDER BY id DESC")
+    fun getAllPlaylistsWithTracks(): Flow<List<PlaylistWithTracks>>
 
-    @Query("DELETE FROM playlists WHERE id = :playlistId")
-    suspend fun deletePlaylistById(playlistId: Long)
+    @Transaction
+    @Query("SELECT * FROM playlists WHERE id = :playlistId LIMIT 1")
+    fun getPlaylistWithTracksById(playlistId: Long): Flow<PlaylistWithTracks?>
 }

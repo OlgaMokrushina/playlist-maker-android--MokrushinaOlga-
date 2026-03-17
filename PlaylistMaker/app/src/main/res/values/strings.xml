@@ -13,7 +13,7 @@
     <string name="settings_share">Поделиться приложением</string>
     <string name="settings_support">Написать в поддержку</string>
     <string name="settings_agreement">Пользовательское соглашение</string>
-
+    <string name="search_history_title">История поиска</string>
 
     <string name="search_hint">Введите запрос для поиска</string>
     <string name="search_nothing_found">Ничего не найдено</string>

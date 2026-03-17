@@ -1,50 +1,40 @@
 package com.example.playlistmaker.data
 
 import com.example.playlistmaker.data.db.entity.PlaylistEntity
+import com.example.playlistmaker.data.db.entity.PlaylistWithTracks
 import com.example.playlistmaker.data.db.entity.TrackEntity
 import com.example.playlistmaker.domain.api.PlaylistsRepository
 import com.example.playlistmaker.domain.models.Playlist
 import com.example.playlistmaker.domain.models.Track
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 
 class PlaylistsRepositoryImpl : PlaylistsRepository {
 
     private val playlistDao = DatabaseHolder.database.playlistDao()
-    private val trackDao = DatabaseHolder.database.trackDao()
 
     override fun getPlaylist(playlistId: Long): Flow<Playlist?> {
-        return combine(
-            playlistDao.getPlaylistById(playlistId),
-            trackDao.getTracksByPlaylistId(playlistId)
-        ) { playlistEntity, trackEntities ->
-            playlistEntity?.toDomain(
-                tracks = trackEntities.map { it.toDomain() }
-            )
+        return playlistDao.getPlaylistWithTracksById(playlistId).map { playlistWithTracks ->
+            playlistWithTracks?.toDomain()
         }
     }
 
     override fun getAllPlaylists(): Flow<List<Playlist>> {
-        return combine(
-            playlistDao.getAllPlaylists(),
-            trackDao.getAllTracks()
-        ) { playlistEntities, trackEntities ->
-
-            playlistEntities.map { playlistEntity ->
-                val playlistTracks = trackEntities
-                    .filter { it.playlistId == playlistEntity.id }
-                    .map { it.toDomain() }
-
-                playlistEntity.toDomain(playlistTracks)
-            }
+        return playlistDao.getAllPlaylistsWithTracks().map { playlists ->
+            playlists.map { it.toDomain() }
         }
     }
 
-    override suspend fun addNewPlaylist(name: String, description: String) {
+    override suspend fun addNewPlaylist(
+        name: String,
+        description: String,
+        coverImageUri: String?
+    ) {
         playlistDao.insertPlaylist(
             PlaylistEntity(
                 name = name,
-                description = description
+                description = description,
+                coverImageUri = coverImageUri
             )
         )
     }
@@ -53,12 +43,13 @@ class PlaylistsRepositoryImpl : PlaylistsRepository {
         playlistDao.deletePlaylistById(id)
     }
 
-    private fun PlaylistEntity.toDomain(tracks: List<Track>): Playlist {
+    private fun PlaylistWithTracks.toDomain(): Playlist {
         return Playlist(
-            id = id,
-            name = name,
-            description = description,
-            tracks = tracks
+            id = playlist.id,
+            name = playlist.name,
+            description = playlist.description,
+            coverImageUri = playlist.coverImageUri,
+            tracks = tracks.map { it.toDomain() }
         )
     }
 
@@ -70,7 +61,7 @@ class PlaylistsRepositoryImpl : PlaylistsRepository {
             trackTime = trackTime,
             artworkUrl100 = artworkUrl100,
             favorite = favorite,
-            playlistId = playlistId
+            playlistId = 0
         )
     }
 }

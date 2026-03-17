@@ -11,14 +11,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,10 +33,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.playlistmaker.R
 import com.example.playlistmaker.domain.models.Track
 
 @Composable
@@ -50,7 +57,9 @@ fun TrackListItem(
     ) {
         AsyncImage(
             model = track.artworkUrl100,
-            contentDescription = null,
+            contentDescription = track.trackName,
+            placeholder = painterResource(id = R.drawable.ic_music),
+            error = painterResource(id = R.drawable.ic_music),
             modifier = Modifier.size(60.dp)
         )
 
@@ -59,11 +68,20 @@ fun TrackListItem(
                 .padding(start = 12.dp)
                 .weight(1f)
         ) {
-            Text(track.trackName, fontWeight = FontWeight.Bold)
-            Text(track.artistName)
+            Text(
+                text = track.trackName,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = track.artistName,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
 
-        Text(track.trackTime)
+        Text(text = track.trackTime)
     }
 }
 
@@ -109,20 +127,47 @@ fun SearchScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-
         OutlinedTextField(
             value = text,
             onValueChange = {
                 text = it
                 if (it.isBlank()) {
-                    viewModel.loadHistory()
+                    viewModel.clearSearch()
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            leadingIcon = {
-                Icon(Icons.Default.Search, contentDescription = null)
-            },
             singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+            placeholder = {
+                Text(text = stringResource(id = R.string.search_placeholder))
+            },
+            leadingIcon = {
+                IconButton(
+                    onClick = {
+                        viewModel.search(text)
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = stringResource(id = R.string.cd_search)
+                    )
+                }
+            },
+            trailingIcon = {
+                if (text.isNotEmpty()) {
+                    IconButton(
+                        onClick = {
+                            text = ""
+                            viewModel.clearSearch()
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = stringResource(id = R.string.cd_clear)
+                        )
+                    }
+                }
+            },
             keyboardOptions = KeyboardOptions(
                 imeAction = ImeAction.Search
             ),
@@ -135,7 +180,7 @@ fun SearchScreen(
 
         if (text.isBlank() && history.isNotEmpty()) {
             Text(
-                text = "История поиска",
+                text = stringResource(id = R.string.search_history_title),
                 modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
                 fontWeight = FontWeight.Bold
             )
@@ -156,13 +201,12 @@ fun SearchScreen(
         }
 
         when (val screenState = state) {
-
             is SearchState.Initial -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Введите строку для поиска")
+                    Text(text = stringResource(id = R.string.search_hint))
                 }
             }
 
@@ -176,16 +220,22 @@ fun SearchScreen(
             }
 
             is SearchState.Success -> {
-
-                LazyColumn {
-                    items(screenState.foundList) { track ->
-
-                        TrackListItem(
-                            track = track,
-                            onClick = { onTrackClick(track) }
-                        )
-
-                        HorizontalDivider()
+                if (screenState.foundList.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = stringResource(id = R.string.search_nothing_found))
+                    }
+                } else {
+                    LazyColumn {
+                        items(screenState.foundList) { track ->
+                            TrackListItem(
+                                track = track,
+                                onClick = { onTrackClick(track) }
+                            )
+                            HorizontalDivider()
+                        }
                     }
                 }
             }
@@ -195,7 +245,12 @@ fun SearchScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Ошибка поиска")
+                    Text(
+                        text = stringResource(
+                            id = R.string.search_error,
+                            screenState.error
+                        )
+                    )
                 }
             }
         }

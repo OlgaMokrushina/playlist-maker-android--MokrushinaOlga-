@@ -1,5 +1,6 @@
 package com.example.playlistmaker.data
 
+import com.example.playlistmaker.data.db.entity.PlaylistTrackCrossRef
 import com.example.playlistmaker.data.db.entity.TrackEntity
 import com.example.playlistmaker.data.dto.TracksSearchRequest
 import com.example.playlistmaker.data.dto.TracksSearchResponse
@@ -22,15 +23,15 @@ class TracksRepositoryImpl(
 
         return if (response.resultCode == 200) {
             (response as TracksSearchResponse).results.map { dto ->
-                val seconds = dto.trackTimeMillis / 1000
-                val minutes = seconds / 60
-                val trackTime = "%02d:%02d".format(minutes, seconds - minutes * 60)
+                val totalSeconds = dto.trackTimeMillis / 1000
+                val minutes = totalSeconds / 60
+                val seconds = totalSeconds % 60
 
                 Track(
                     id = dto.trackId,
                     trackName = dto.trackName,
                     artistName = dto.artistName,
-                    trackTime = trackTime,
+                    trackTime = "%02d:%02d".format(minutes, seconds),
                     artworkUrl100 = dto.artworkUrl100?.replaceAfterLast('/', "512x512bb.jpg"),
                     favorite = false,
                     playlistId = 0
@@ -51,49 +52,72 @@ class TracksRepositoryImpl(
     }
 
     override fun getFavoriteTracks(): Flow<List<Track>> {
-        return dao.getFavoriteTracks().map { entityList ->
-            entityList.map { entity ->
-                entity.toDomain()
-            }
+        return dao.getFavoriteTracks().map { entities ->
+            entities.map { it.toDomain() }
         }
     }
 
     override suspend fun insertTrackToPlaylist(track: Track, playlistId: Long) {
-        val current = dao.getTrackById(track.id)
+        val currentTrack = dao.getTrackById(track.id)
 
-        val updatedTrack = track.copy(
-            favorite = current?.favorite ?: track.favorite,
-            playlistId = playlistId
+        val trackEntity = if (currentTrack != null) {
+            currentTrack.copy(
+                trackName = track.trackName,
+                artistName = track.artistName,
+                trackTime = track.trackTime,
+                artworkUrl100 = track.artworkUrl100
+            )
+        } else {
+            TrackEntity(
+                id = track.id,
+                trackName = track.trackName,
+                artistName = track.artistName,
+                trackTime = track.trackTime,
+                artworkUrl100 = track.artworkUrl100,
+                favorite = track.favorite
+            )
+        }
+
+        dao.insertTrack(trackEntity)
+
+        dao.insertTrackToPlaylistCrossRef(
+            PlaylistTrackCrossRef(
+                playlistId = playlistId,
+                trackId = track.id
+            )
         )
+    }
 
-        dao.insertTrack(updatedTrack.toEntity())
+    override suspend fun isTrackInPlaylist(trackId: Long, playlistId: Long): Boolean {
+        return dao.isTrackInPlaylist(trackId, playlistId)
     }
 
     override suspend fun deleteTrackFromPlaylist(track: Track) {
-        val current = dao.getTrackById(track.id)
-
-        val updatedTrack = track.copy(
-            favorite = current?.favorite ?: track.favorite,
-            playlistId = 0
-        )
-
-        dao.insertTrack(updatedTrack.toEntity())
+        dao.deleteTrackRelations(track.id)
     }
 
     override suspend fun updateTrackFavoriteStatus(track: Track, isFavorite: Boolean) {
-        val current = dao.getTrackById(track.id)
+        val currentTrack = dao.getTrackById(track.id)
 
-        val updatedTrack = track.copy(
-            favorite = isFavorite,
-            playlistId = current?.playlistId ?: track.playlistId
-        )
+        val updatedTrack = if (currentTrack != null) {
+            currentTrack.copy(favorite = isFavorite)
+        } else {
+            TrackEntity(
+                id = track.id,
+                trackName = track.trackName,
+                artistName = track.artistName,
+                trackTime = track.trackTime,
+                artworkUrl100 = track.artworkUrl100,
+                favorite = isFavorite
+            )
+        }
 
-        dao.insertTrack(updatedTrack.toEntity())
+        dao.insertTrack(updatedTrack)
     }
 
     override fun deleteTracksByPlaylistId(playlistId: Long) {
         scope.launch {
-            dao.deleteTracksByPlaylistId(playlistId)
+            dao.deletePlaylistRelations(playlistId)
         }
     }
 
@@ -105,19 +129,7 @@ class TracksRepositoryImpl(
             trackTime = trackTime,
             artworkUrl100 = artworkUrl100,
             favorite = favorite,
-            playlistId = playlistId
-        )
-    }
-
-    private fun Track.toEntity(): TrackEntity {
-        return TrackEntity(
-            id = id,
-            trackName = trackName,
-            artistName = artistName,
-            trackTime = trackTime,
-            artworkUrl100 = artworkUrl100,
-            favorite = favorite,
-            playlistId = playlistId
+            playlistId = 0
         )
     }
 }

@@ -11,8 +11,12 @@ import com.example.playlistmaker.domain.api.TracksRepository
 import com.example.playlistmaker.domain.models.Playlist
 import com.example.playlistmaker.domain.models.Track
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class PlaylistsViewModel : ViewModel() {
@@ -28,16 +32,42 @@ class PlaylistsViewModel : ViewModel() {
             scope = viewModelScope
         )
 
-    val playlists: Flow<List<Playlist>> = playlistsRepository.getAllPlaylists()
+    val playlists: StateFlow<List<Playlist>> = playlistsRepository.getAllPlaylists()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
-    val favoriteList: Flow<List<Track>> = tracksRepository.getFavoriteTracks()
+    val favoriteList: StateFlow<List<Track>> = tracksRepository.getFavoriteTracks()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
-    fun createNewPlayList(namePlaylist: String, description: String) {
+    private val _isFavorite = MutableStateFlow(false)
+    val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
+
+    fun createNewPlayList(
+        namePlaylist: String,
+        description: String,
+        coverImageUri: String?
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             playlistsRepository.addNewPlaylist(
                 name = namePlaylist,
-                description = description
+                description = description,
+                coverImageUri = coverImageUri
             )
+        }
+    }
+
+    fun observeTrack(track: Track) {
+        viewModelScope.launch {
+            tracksRepository.getTrackByNameAndArtist(track).collect { existingTrack ->
+                _isFavorite.value = existingTrack?.favorite ?: false
+            }
         }
     }
 
@@ -45,8 +75,15 @@ class PlaylistsViewModel : ViewModel() {
         tracksRepository.insertTrackToPlaylist(track, playlistId)
     }
 
-    suspend fun toggleFavorite(track: Track, isFavorite: Boolean) {
-        tracksRepository.updateTrackFavoriteStatus(track, isFavorite)
+    suspend fun isTrackAlreadyInPlaylist(trackId: Long, playlistId: Long): Boolean {
+        return tracksRepository.isTrackInPlaylist(trackId, playlistId)
+    }
+
+    fun toggleFavorite(track: Track, isFavorite: Boolean) {
+        viewModelScope.launch {
+            tracksRepository.updateTrackFavoriteStatus(track, isFavorite)
+            _isFavorite.value = isFavorite
+        }
     }
 
     suspend fun deleteTrackFromPlaylist(track: Track) {

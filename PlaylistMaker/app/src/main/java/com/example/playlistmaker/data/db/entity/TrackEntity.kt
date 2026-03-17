@@ -11,6 +11,5 @@ data class TrackEntity(
     val artistName: String,
     val trackTime: String,
     val artworkUrl100: String?,
-    val favorite: Boolean = false,
-    val playlistId: Long = 0
+    val favorite: Boolean = false
 )

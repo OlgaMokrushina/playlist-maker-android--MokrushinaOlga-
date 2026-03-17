@@ -13,6 +13,8 @@ interface TracksRepository {
 
     suspend fun insertTrackToPlaylist(track: Track, playlistId: Long)
 
+    suspend fun isTrackInPlaylist(trackId: Long, playlistId: Long): Boolean
+
     suspend fun deleteTrackFromPlaylist(track: Track)
 
     suspend fun updateTrackFavoriteStatus(track: Track, isFavorite: Boolean)
