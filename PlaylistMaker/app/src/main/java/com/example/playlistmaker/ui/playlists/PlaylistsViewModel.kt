@@ -91,7 +91,6 @@ class PlaylistsViewModel : ViewModel() {
     }
 
     suspend fun deletePlaylistById(id: Long) {
-        tracksRepository.deleteTracksByPlaylistId(id)
         playlistsRepository.deletePlaylistById(id)
     }
 

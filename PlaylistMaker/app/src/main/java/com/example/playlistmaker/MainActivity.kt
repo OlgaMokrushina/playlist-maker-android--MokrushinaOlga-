@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -29,6 +30,7 @@ import com.example.playlistmaker.ui.search.SearchScreen
 import com.example.playlistmaker.ui.search.SearchViewModel
 import com.example.playlistmaker.ui.settings.SettingsScreen
 import com.example.playlistmaker.ui.theme.PlaylistMakerTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -79,6 +81,7 @@ class MainActivity : ComponentActivity() {
                             SearchScreen(
                                 modifier = Modifier.fillMaxSize(),
                                 viewModel = searchViewModel,
+                                onBack = { navController.popBackStack() },
                                 onTrackClick = { track ->
                                     searchViewModel.selectTrack(track)
                                     navController.navigate(Screen.TrackDetails.route)
@@ -131,7 +134,13 @@ class MainActivity : ComponentActivity() {
 
                             PlaylistScreen(
                                 playlistViewModel = playlistViewModel,
-                                onBack = { navController.popBackStack() }
+                                onBack = { navController.popBackStack() },
+                                onDeletePlaylist = { id ->
+                                    lifecycleScope.launch {
+                                        playlistsViewModel.deletePlaylistById(id)
+                                        navController.popBackStack()
+                                    }
+                                }
                             )
                         }
 

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.map
 class PlaylistsRepositoryImpl : PlaylistsRepository {
 
     private val playlistDao = DatabaseHolder.database.playlistDao()
+    private val trackDao = DatabaseHolder.database.trackDao()
 
     override fun getPlaylist(playlistId: Long): Flow<Playlist?> {
         return playlistDao.getPlaylistWithTracksById(playlistId).map { playlistWithTracks ->
@@ -40,6 +41,7 @@ class PlaylistsRepositoryImpl : PlaylistsRepository {
     }
 
     override suspend fun deletePlaylistById(id: Long) {
+        trackDao.deletePlaylistRelations(id)
         playlistDao.deletePlaylistById(id)
     }
 

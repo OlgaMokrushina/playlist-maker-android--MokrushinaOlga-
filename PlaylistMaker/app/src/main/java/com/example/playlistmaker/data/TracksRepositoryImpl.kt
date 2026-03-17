@@ -9,7 +9,6 @@ import com.example.playlistmaker.domain.models.Track
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 
 class TracksRepositoryImpl(
     private val networkClient: NetworkClient,
@@ -113,12 +112,6 @@ class TracksRepositoryImpl(
         }
 
         dao.insertTrack(updatedTrack)
-    }
-
-    override fun deleteTracksByPlaylistId(playlistId: Long) {
-        scope.launch {
-            dao.deletePlaylistRelations(playlistId)
-        }
     }
 
     private fun TrackEntity.toDomain(): Track {

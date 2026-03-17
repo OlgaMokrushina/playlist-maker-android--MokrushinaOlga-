@@ -15,15 +15,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -108,10 +112,12 @@ fun SearchHistoryItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     modifier: Modifier,
     viewModel: SearchViewModel,
+    onBack: () -> Unit,
     onTrackClick: (Track) -> Unit
 ) {
     val state by viewModel.searchScreenState.collectAsState()
@@ -122,138 +128,156 @@ fun SearchScreen(
         viewModel.loadHistory()
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        OutlinedTextField(
-            value = text,
-            onValueChange = {
-                text = it
-                if (it.isBlank()) {
-                    viewModel.clearSearch()
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            placeholder = {
-                Text(text = stringResource(id = R.string.search_placeholder))
-            },
-            leadingIcon = {
-                IconButton(
-                    onClick = {
-                        viewModel.search(text)
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = stringResource(id = R.string.cd_search)
-                    )
-                }
-            },
-            trailingIcon = {
-                if (text.isNotEmpty()) {
-                    IconButton(
-                        onClick = {
-                            text = ""
-                            viewModel.clearSearch()
-                        }
-                    ) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(text = stringResource(id = R.string.menu_search))
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.Default.Clear,
-                            contentDescription = stringResource(id = R.string.cd_clear)
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(id = R.string.cd_back)
                         )
                     }
                 }
-            },
-            keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Search
-            ),
-            keyboardActions = KeyboardActions(
-                onSearch = {
-                    viewModel.search(text)
-                }
             )
-        )
-
-        if (text.isBlank() && history.isNotEmpty()) {
-            Text(
-                text = stringResource(id = R.string.search_history_title),
-                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
-                fontWeight = FontWeight.Bold
-            )
-
-            LazyColumn {
-                items(history) { query ->
-                    SearchHistoryItem(
-                        query = query,
-                        onClick = {
-                            text = query
-                            viewModel.search(query)
-                        }
-                    )
-                    HorizontalDivider()
-                }
-            }
-            return
         }
+    ) { innerPadding ->
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
+        ) {
+            OutlinedTextField(
+                value = text,
+                onValueChange = {
+                    text = it
+                    if (it.isBlank()) {
+                        viewModel.clearSearch()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                placeholder = {
+                    Text(text = stringResource(id = R.string.search_placeholder))
+                },
+                leadingIcon = {
+                    IconButton(
+                        onClick = {
+                            viewModel.search(text)
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = stringResource(id = R.string.cd_search)
+                        )
+                    }
+                },
+                trailingIcon = {
+                    if (text.isNotEmpty()) {
+                        IconButton(
+                            onClick = {
+                                text = ""
+                                viewModel.clearSearch()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = stringResource(id = R.string.cd_clear)
+                            )
+                        }
+                    }
+                },
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Search
+                ),
+                keyboardActions = KeyboardActions(
+                    onSearch = {
+                        viewModel.search(text)
+                    }
+                )
+            )
 
-        when (val screenState = state) {
-            is SearchState.Initial -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = stringResource(id = R.string.search_hint))
+            if (text.isBlank() && history.isNotEmpty()) {
+                Text(
+                    text = stringResource(id = R.string.search_history_title),
+                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+                    fontWeight = FontWeight.Bold
+                )
+
+                LazyColumn {
+                    items(history) { query ->
+                        SearchHistoryItem(
+                            query = query,
+                            onClick = {
+                                text = query
+                                viewModel.search(query)
+                            }
+                        )
+                        HorizontalDivider()
+                    }
                 }
+                return@Column
             }
 
-            is SearchState.Searching -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-
-            is SearchState.Success -> {
-                if (screenState.foundList.isEmpty()) {
+            when (val screenState = state) {
+                is SearchState.Initial -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = stringResource(id = R.string.search_nothing_found))
+                        Text(text = stringResource(id = R.string.search_hint))
                     }
-                } else {
-                    LazyColumn {
-                        items(screenState.foundList) { track ->
-                            TrackListItem(
-                                track = track,
-                                onClick = { onTrackClick(track) }
-                            )
-                            HorizontalDivider()
+                }
+
+                is SearchState.Searching -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+                is SearchState.Success -> {
+                    if (screenState.foundList.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = stringResource(id = R.string.search_nothing_found))
+                        }
+                    } else {
+                        LazyColumn {
+                            items(screenState.foundList) { track ->
+                                TrackListItem(
+                                    track = track,
+                                    onClick = { onTrackClick(track) }
+                                )
+                                HorizontalDivider()
+                            }
                         }
                     }
                 }
-            }
 
-            is SearchState.Fail -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stringResource(
-                            id = R.string.search_error,
-                            screenState.error
+                is SearchState.Fail -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(
+                                id = R.string.search_error,
+                                screenState.error
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
     }
 }
-
